@@ -14,10 +14,12 @@ import (
 )
 
 var listen string
+var simple bool
 
 const (
 	statusPath     = "/status"
-	diffPath       = "/"
+	diffSmartPath  = "/"
+	diffSimplePath = "/simple"
 	ignoreColorKey = "ignoreColor"
 )
 
@@ -29,17 +31,76 @@ func status(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func diff(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseMultipartForm(10 * 1024 * 1024)
+func diffSmart(w http.ResponseWriter, r *http.Request) {
 
+	img1, img2, ignoreColor, err := parseForm(r)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	if len(r.MultipartForm.File) != 2 {
+	pxComparer := imagediff.NewSmartImageComparer()
+
+	//If user has specified an ignore color then tell the pixelcomparer what it is
+	if nil != ignoreColor {
+		pxComparer.SetIgnoreColor(ignoreColor)
+	}
+
+	//Calculate difference between the two Images
+	numDiff, diffImage, err := pxComparer.CompareImages(img1, img2)
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
+	}
+
+	//Return the differences to the caller
+	w.Header().Add("Content-Type", "image/png")
+	w.Header().Add("numDifferentPixels", strconv.Itoa(numDiff))
+	w.WriteHeader(http.StatusOK)
+	png.Encode(w, diffImage)
+	return
+}
+
+func diffSimple(w http.ResponseWriter, r *http.Request) {
+
+	img1, img2, ignoreColor, err := parseForm(r)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	pxComparer := imagediff.NewSimpleImageComparer()
+
+	//If user has specified an ignore color then tell the pixelcomparer what it is
+	if nil != ignoreColor {
+		pxComparer.SetIgnoreColor(ignoreColor)
+	}
+
+	//Calculate difference between the two Images
+	numDiff, diffImage, err := pxComparer.CompareImages(img1, img2)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+
+	}
+
+	//Return the differences to the caller
+	w.Header().Add("Content-Type", "image/png")
+	w.Header().Add("numDifferentPixels", strconv.Itoa(numDiff))
+	w.WriteHeader(http.StatusOK)
+	png.Encode(w, diffImage)
+	return
+}
+
+func parseForm(r *http.Request) (image.Image, image.Image, *color.NRGBA, error) {
+	err := r.ParseMultipartForm(10 * 1024 * 1024)
+
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	if len(r.MultipartForm.File) != 2 {
+		return nil, nil, nil, err
 	}
 
 	var files [2]string
@@ -53,71 +114,51 @@ func diff(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	//Decode files into Image objects
+	//Decode files into Image interfaces
 	file1, _, err := r.FormFile(files[0])
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		return nil, nil, nil, err
 	}
 	defer file1.Close()
 
 	file2, _, err := r.FormFile(files[1])
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		return nil, nil, nil, err
 	}
 	defer file2.Close()
 
 	img1, _, err := image.Decode(file1)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		return nil, nil, nil, err
 	}
 
 	img2, _, err := image.Decode(file2)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		return nil, nil, nil, err
 	}
 
-	pxComparer := imagediff.NewYIQPixelComparer()
-	//pxComparer := imagediff.NewDefaultPixelComparer()
-
-	//If user has specified an ignore color then tell the pixelcomparer what it is
 	strIgnoreColor := []byte(r.FormValue(ignoreColorKey))
-
+	var ignoreColor *color.NRGBA
+	ignoreColor = nil
 	if len(strIgnoreColor) > 0 {
-		ignoreColor := &color.RGBA{}
-		err := json.Unmarshal(strIgnoreColor, ignoreColor)
+		tmp := color.NRGBA{}
+		err = json.Unmarshal(strIgnoreColor, &tmp)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
+			return nil, nil, nil, err
 		}
-		pxComparer.IgnoreColor = ignoreColor
-	}
 
-	//Calculate difference between the two Images
-	numDiff, diffImage, err := imagediff.Diff(img1, img2, pxComparer)
-
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		ignoreColor = &tmp
 
 	}
 
-	//Return the differences to the caller
-	w.Header().Add("Content-Type", "image/png")
-	w.Header().Add("numDifferentPixels", strconv.Itoa(numDiff))
-	w.WriteHeader(http.StatusOK)
-	png.Encode(w, diffImage)
-
-	return
+	return img1, img2, ignoreColor, nil
 }
 
 func main() {
 	handler := http.NewServeMux()
 	handler.HandleFunc(statusPath, status)
-	handler.HandleFunc(diffPath, diff)
+	handler.HandleFunc(diffSmartPath, diffSmart)
+	handler.HandleFunc(diffSimplePath, diffSimple)
 
 	server := &http.Server{
 		Addr:    listen,
