@@ -5,15 +5,19 @@ language: go
 services:
   - docker
 
-
 jobs:
   include:
     - stage: Integration and Unit Tests
       script:  go test -v ./imagediff/
-    - stage: Build and push docker when tag is set
-      script: travis/docker-push.sh $TRAVIS_TAG
-      on: tags: true     
-
-branches:
-  only:
-    - master
+    - stage: Deploy
+      deploy:
+        - provider: script
+          script: travis/docker-push.sh latest
+          skip_cleanup: true
+          on:
+            branch: master
+        - provider: script
+          script: travis/docker-push.sh $TRAVIS_TAG
+          skip_cleanup: true
+          on:
+            tags: true
