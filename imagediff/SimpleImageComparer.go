@@ -45,8 +45,9 @@ func (comparer *SimpleImageComparer) CompareImages(img1 image.Image, img2 image.
 		for x := img1Bounds.Min.X; x < img1Bounds.Max.X; x++ {
 
 			Pixel1rgba := img1.At(x, y)
+			Pixel2rgba := img2.At(x, y)
 			P1NRGBA := color2nrgba(Pixel1rgba)
-			P2NRGBA := color2nrgba(img2.At(x, y))
+			P2NRGBA := color2nrgba(Pixel2rgba)
 
 			r1 := P1NRGBA.R
 			g1 := P1NRGBA.G
@@ -59,16 +60,20 @@ func (comparer *SimpleImageComparer) CompareImages(img1 image.Image, img2 image.
 			a2 := P2NRGBA.A
 
 			if comparer.useignoreColor && isIgnorePixel(P1NRGBA.R, P1NRGBA.G, P1NRGBA.B, P1NRGBA.A, P2NRGBA.R, P2NRGBA.G, P2NRGBA.B, P2NRGBA.A, comparer.ignoreColor) {
-				same = true
+				//These pixels should be ignored
+				diffImage.SetNRGBA(x, y, niceOutputPixel(*comparer.ignoreColor))
+				continue
 			} else {
 				same = r1 == r2 && g1 == g2 && b1 == b2 && a1 == a2
 			}
 
 			if !same {
+				//These 2 pixels have different RGBA values
 				numDifferentPixel++
 				outputPixel = comparer.DiffColor
 			} else {
-				outputPixel = rgba2nrgba(color.GrayModel.Convert(Pixel1rgba).RGBA())
+				//These 2 pixels are exactly the same
+				outputPixel = niceOutputPixel(P1NRGBA)
 			}
 			diffImage.SetNRGBA(x, y, outputPixel)
 		}

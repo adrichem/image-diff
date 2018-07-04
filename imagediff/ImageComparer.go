@@ -34,3 +34,15 @@ func rgba2nrgba(r, g, b, a uint32) color.NRGBA {
 		A: uint8(a / 0x101),
 	}
 }
+
+func niceOutputPixel(p color.NRGBA) color.NRGBA {
+	val := blend(grayPixel(&p), 0.1)
+	output := color.NRGBA{}
+	output.R = uint8(val)
+	output.G = uint8(val)
+	output.B = uint8(val)
+	output.A = 255
+
+	return output
+
+}

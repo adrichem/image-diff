@@ -61,25 +61,20 @@ func (comparer SmartImageComparer) CompareImages(img1 image.Image, img2 image.Im
 			P1NRGBA := color2nrgba(Pixel1)
 			P2NRGBA := color2nrgba(Pixel2)
 
-			val := blend(grayPixel(&P1NRGBA), 0.1)
-			outputPixelWhenTheresNoDifference := color.NRGBA{}
-			outputPixelWhenTheresNoDifference.R = uint8(val)
-			outputPixelWhenTheresNoDifference.G = uint8(val)
-			outputPixelWhenTheresNoDifference.B = uint8(val)
-			outputPixelWhenTheresNoDifference.A = 255
-
 			if comparer.useignoreColor && isIgnorePixel(P1NRGBA.R, P1NRGBA.G, P1NRGBA.B, P1NRGBA.A, P2NRGBA.R, P2NRGBA.G, P2NRGBA.B, P2NRGBA.A, comparer.ignoreColor) {
-				diffImage.SetNRGBA(x, y, outputPixelWhenTheresNoDifference)
+				//These pixels should be ignored
+				diffImage.SetNRGBA(x, y, niceOutputPixel(*comparer.ignoreColor))
 				continue
 			}
 
 			difference := perceptualColorDifference(&P1NRGBA, &P2NRGBA)
-
 			if difference > maxDifference {
+				//These 2 pixels are not significantly different.
 				numDifferentPixel++
 				diffImage.SetNRGBA(x, y, comparer.DiffColor)
 			} else {
-				diffImage.SetNRGBA(x, y, outputPixelWhenTheresNoDifference)
+				//These 2 pixels are not different enough.
+				diffImage.SetNRGBA(x, y, niceOutputPixel(P1NRGBA))
 			}
 		}
 	}
