@@ -1,14 +1,16 @@
 # imagediff
 ## Purpose
 Imagediff determines the differences between two images:
+
 | First input image  | Second input image | Detected differences |
 | ------------- | ------------- |------------- |
-| <img src="./examples/test1a.png" width="300">  | <img src="./examples/test1b.png" width="300">  |<img src="./examples/test1-result.png" width="300">|
+| <img src="./examples/test1a.png" width="200">  | <img src="./examples/test1b.png" width="200">  | <img src="./examples/test1-result.png" width="200"> |
 
 You can tell it to ignore certain areas in the images. Choose some random color, cover up those areas in either of the images and supply the RGBA values of the selected color (see later how to supply the RGBA values)
+
 | First input image  | Second input image | Result showing the difference |
 | ------------- | ------------- |------------- |
-| <img src="./examples/test-ignorecolor-1.png" width="300">  | <img src="./examples/test-ignorecolor-2.png" width="300"> |  <img src="./examples/test-ignorecolor-result.png" width="300"> |
+| <img src="./examples/test-ignorecolor-1.png" width="200">  | <img src="./examples/test-ignorecolor-2.png" width="200"> |  <img src="./examples/test-ignorecolor-result.png" width="200"> |
 
 ## Running it as a standalone tool
 It can run as a standalone commandline tool like this:
@@ -48,9 +50,10 @@ Post the images as a multipart form. The service responds with:
 2. a response header containing the number of different pixels.
 
 #### Example with postman
+
 | Headers  | Body | 
-| ------------- | ------------- |------------- |
-| <img src="./examples/postman-headers.png" width="600">  | <img src="./examples/postman-body.png" width="600">  |
+| ------------- | ------------- |
+| <img src="./examples/postman-headers.PNG" width="600">  | <img src="./examples/postman-body.png" width="600">  |
 
 #### Example in C#
 ```csharp
