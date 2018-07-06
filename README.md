@@ -44,7 +44,7 @@ docker run -d --rm -p80:80 adrichem/image-diff:latest -listen 0.0.0.0:80
 ### Check that its running
 If you want to check whether the service is ready for use, you can GET the `/status` endpoint. It returns HTTP 200 when its ready for use. 
 
-### Send images and check the response headaers and body for results
+### Send images and check the response headers and body for results
 Post the images as a multipart form. The service responds with:
 1. a body containing the difference image.
 2. a response header containing the number of different pixels.
